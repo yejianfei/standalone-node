@@ -15,12 +15,15 @@ let files = program.files
 let home = program.home || process.cwd()
 let dist = program.dist || path.join(process.cwd(), 'dist')
 let version = process.version
-let runtime = path.join(os.platform() !== 'win32' ? process.env.HOME : '', '.standalone_node')
+let runtime = path.join(process.env.HOME, '.standalone_node')
+let executable = os.platform() === 'win32' ? 'node.exe' : 'node'
 
 if (!fs.pathExistsSync(runtime)) {
   fs.ensureDirSync(runtime)
 }
-let name = `node-${version}-${os.type().toLowerCase()}-${os.arch()}`
+
+let sys = os.platform() === 'win32' ? 'win' : os.platform()
+let name = `node-${version}-${sys}-${os.arch()}`
 
 new Promise((resolve, reject) => {
   if (fs.pathExistsSync(path.join(runtime, name))) {
@@ -40,11 +43,11 @@ new Promise((resolve, reject) => {
       case 'win32':
         break
       default:
-        fs.copyFileSync(path.join(runtime, name, 'bin', 'node'), path.join(runtime, name, 'node'))
+        fs.copyFileSync(path.join(runtime, name, 'bin', executable), path.join(runtime, name, executable))
     }
 
     fs.readdirSync(path.join(runtime, name))
-        .filter((item) => item !== 'node')
+        .filter((item) => item !== executable)
         .forEach((file) => fs.removeSync(path.join(runtime, name, file)))
   }
 
@@ -55,11 +58,7 @@ new Promise((resolve, reject) => {
   fs.ensureDirSync(dist)
   fs.copyFileSync(path.join(home, 'package.json'), path.join(dist, 'package.json'))
 
-  child.execFileSync('npm', [
-    'install',
-    '--production',
-    '--prefix', dist
-  ])
+  child.execSync(`cd ${dist} && npm install --production`)
 
   let info = fs.readJSONSync(path.join(dist, 'package.json'))
   fs.unlinkSync(path.join(dist, 'package.json'))
@@ -69,7 +68,7 @@ new Promise((resolve, reject) => {
     fs.ensureDirSync(path.join(dist, 'bin'))
   }
 
-  fs.copyFileSync(path.join(runtime, name, 'node'), path.join(dist, 'bin', 'node'))
+  fs.copyFileSync(path.join(runtime, name, executable), path.join(dist, 'bin', executable))
 
   fg.sync(files).forEach((file) => {
     let target = path.join(dist, file)
@@ -79,9 +78,10 @@ new Promise((resolve, reject) => {
     fs.copyFileSync(path.join(process.cwd(), file), path.join(dist, file))
   })
 
-  if (os.platform() !== 'win32') {
+  if (os.platform() === 'win32') {
+    fs.writeFileSync(path.join(dist, `${info.name}.cmd`), `%~dp0bin\\node ${info.main}`)
+  } else {
     fs.writeFileSync(path.join(dist, info.name), `#!/bin/bash\n$(dirname "\${BASH_SOURCE[0]}")/bin/node ${info.main}`)
-
     fs.chmodSync(path.join(dist, info.name), '0755')
   }
 })
