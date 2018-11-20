@@ -1,0 +1,17 @@
+{
+  "name": "standalone-node",
+  "version": "1.0.0",
+  "description": "copy node ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^2.19.0",
+    "download": "^7.1.0",
+    "fast-glob": "^2.2.4",
+    "fs-extra": "^7.0.1"
+  }
+}
