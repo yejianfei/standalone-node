@@ -8,7 +8,8 @@ const fg = require('fast-glob')
 program
   .option('-h, --home <path>', 'project dir.')
   .option('-f, --files <items>', 'include files.', (val) => val.split(','))
-  .option('-o, --dist <path>', 'output target')
+  .option('-o, --dist <path>', 'output target.')
+  .option('-a, --app <path>', 'output target.')
   .parse(process.argv)
 
 let files = program.files
@@ -25,7 +26,7 @@ if (!fs.pathExistsSync(runtime)) {
 let sys = os.platform() === 'win32' ? 'win' : os.platform()
 let name = `node-${version}-${sys}-${os.arch()}`
 
-new Promise((resolve, reject) => {
+new Promise((resolve) => {
   if (fs.pathExistsSync(path.join(runtime, name))) {
     return resolve()
   }
@@ -79,9 +80,9 @@ new Promise((resolve, reject) => {
   })
 
   if (os.platform() === 'win32') {
-    fs.writeFileSync(path.join(dist, `${info.name}.cmd`), `%~dp0bin\\node ${info.main}`)
+    fs.writeFileSync(path.join(dist, `${program.app || info.name}.cmd`), `%~dp0bin\\node ${info.main}`)
   } else {
-    fs.writeFileSync(path.join(dist, info.name), `#!/bin/bash\n$(dirname "\${BASH_SOURCE[0]}")/bin/node ${info.main}`)
-    fs.chmodSync(path.join(dist, info.name), '0755')
+    fs.writeFileSync(path.join(dist, program.app || info.name), `#!/bin/bash\n$(dirname "\${BASH_SOURCE[0]}")/bin/node ${info.main}`)
+    fs.chmodSync(path.join(dist, program.app || info.name), '0755')
   }
 })
